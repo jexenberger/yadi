@@ -43,15 +43,14 @@ public class ConstructionTest {
 
     @Test
     public void testCreationWithConstructor() throws Exception {
-
-        String result = construction.createWithConstructor(new Arguments(), String.class);
+        String result = construction.createWithConstructor(new Arguments(), String.class, null, null);
         assertEquals("hello", result);
     }
 
     @Test
     public void testCreationWithNoConstructor() throws Exception {
         Construction<String> cons = (args) -> {};
-        String result = cons.createWithConstructor(new Arguments(), String.class);
+        String result = cons.createWithConstructor(new Arguments(), String.class, null, null);
         assertEquals("", result);
     }
 

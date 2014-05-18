@@ -1,17 +1,28 @@
 package org.yadi.core;
 
+import java.util.function.Supplier;
+
 /**
  * Created by julian3 on 2014/05/04.
  */
-public class Person {
+public class Person implements Runnable, Supplier<Person> {
 
     String name;
     String surname;
     String fullName;
     Person spouse;
+    Runnable runningPartner;
 
 
     public Person() {
+    }
+
+    public Person(Runnable runningPartner) {
+        this.runningPartner = runningPartner;
+    }
+
+    public Person(Person spouse) {
+        this.spouse = spouse;
     }
 
     public String getName() {
@@ -44,5 +55,19 @@ public class Person {
 
     public void setup() {
         this.fullName = this.name + " " + this.surname;
+    }
+
+    public Runnable getRunningPartner() {
+        return runningPartner;
+    }
+
+    @Override
+    public void run() {
+        System.out.println(getFullName());
+    }
+
+    @Override
+    public Person get() {
+        return this;
     }
 }

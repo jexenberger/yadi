@@ -25,22 +25,26 @@ import java.util.function.Supplier;
 public class InjectableObjectDefinition<T>  extends ObjectDefinition<T>{
 
 
-    Container context;
-
-    public InjectableObjectDefinition(Container context) {
-        this.context = context;
+    public InjectableObjectDefinition(Container container) {
+        super(container);
     }
 
     @Override
     public InjectableObjectDefinition<T> type(Class<T> myObjectClass) {
         super.type(myObjectClass);
+        debug("type -> " + myObjectClass);
         return this;
+    }
+
+    private void debug(String message) {
+        getContainer().getLog().debug(message);
     }
 
 
     @Override
     public <K> InjectableObjectDefinition<T> set(BiConsumer<T, K> setA, K s) {
         super.set(setA, s);
+        debug(s.toString());
         return this;
     }
 
@@ -72,6 +76,7 @@ public class InjectableObjectDefinition<T>  extends ObjectDefinition<T>{
     @Override
     public InjectableObjectDefinition<T> inScope(String identifier) {
         super.inScope(identifier);
+        debug("SCOPE "+identifier);
         return this;
     }
 
@@ -95,41 +100,20 @@ public class InjectableObjectDefinition<T>  extends ObjectDefinition<T>{
 
 
     @Override
-    public <K> InjectableObjectDefinition<T> addConstructorArg(Object s) {
-        super.addConstructorArg(s);
+    public <K> InjectableObjectDefinition<T> constructorVal(Object ... s) {
+        super.constructorVal(s);
         return this;
     }
 
     @Override
-    public <K> InjectableObjectDefinition<T> addConstructorArg(Object s, Class<?> targetType) {
-        super.addConstructorArg(s, targetType);
+    public <K> InjectableObjectDefinition<T> constructorVal(Object s, Class<?> targetType) {
+        super.constructorVal(s, targetType);
         return this;
-    }
-
-    public <K> InjectableObjectDefinition<T> inject(BiConsumer<T, K> setMethod, String name) {
-
-        return inject(setMethod, ()-> context.get(name));
-    }
-
-    public <K> InjectableObjectDefinition<T> inject(BiConsumer<T, K> setMethod, Class type) {
-        return inject(setMethod, ()->  (K) context.get(type));
     }
 
     @Override
     public InjectableObjectDefinition<T> construct(Construction<T> constructor) {
         super.construct(constructor);
-        return this;
-    }
-
-    public <K> InjectableObjectDefinition<T> inject(BiConsumer<T, K> setMethod, Supplier<K> supplier) {
-        BiConsumer<T, K> consumer = (instance, value) -> {
-            K result = supplier.get();
-            if (result == null) {
-                throw new ContainerException(instance.getClass().getName()+" tried to wire named instance which does not exist");
-            }
-            setMethod.accept(instance, result);
-        };
-        addMutator(consumer, null);
         return this;
     }
 

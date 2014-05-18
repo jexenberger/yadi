@@ -17,6 +17,7 @@ package org.yadi.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -26,12 +27,41 @@ public class Arguments {
 
     Collection<Pair<Class, Object>> arguments = new ArrayList<>();
 
+    Function<String, Object> namedSource;
+    Function<Class<?>,Object> typedSource;
+
     public Arguments() {
         this.arguments = new ArrayList<>(5);
     }
 
+    public Arguments(Function<String, Object> namedSource, Function<Class<?>, Object> typedSource) {
+        this();
+        this.namedSource = namedSource;
+        this.typedSource = typedSource;
+    }
+
     public Arguments add(Object value, Class<?> targetType) {
         arguments.add(new Pair<>(targetType, value));
+        return this;
+    }
+
+    public Arguments ref(String name, Class<?> targetType) {
+        add(new Reference(name, namedSource), targetType);
+        return this;
+    }
+
+    public Arguments ref(String name) {
+        add(new Reference(name, namedSource), null);
+        return this;
+    }
+
+    public Arguments ref(Class type, Class<?> targetType) {
+        add(new Reference(type, typedSource), targetType);
+        return this;
+    }
+
+    public Arguments ref(Class type) {
+        add(new Reference(type, typedSource), type);
         return this;
     }
 

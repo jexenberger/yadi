@@ -29,12 +29,12 @@ public class InstanceScope implements Scope{
     @Override
     public <T> Optional<T> create(ObjectDefinition<T> objectDefinition) {
         Class<T> implementation = objectDefinition.getImplementation();
-        if (implementation.getInterfaces().length > 0) {
+        if (objectDefinition.isProxy()) {
             InstanceScopeInterceptor prototypeScopeInterceptor = new InstanceScopeInterceptor(objectDefinition);
             T instance =  (T) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), implementation.getInterfaces(), prototypeScopeInterceptor);
             return Optional.of(instance);
         } else {
-            throw new ContainerException(objectDefinition.getImplementation().getName()+" has no interfaces to proxy from request scope, this object cannot be injected from an object in a different scope or have a destructor");
+            return Optional.of(objectDefinition.create());
         }
 
     }

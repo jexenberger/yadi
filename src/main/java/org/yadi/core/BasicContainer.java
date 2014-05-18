@@ -28,6 +28,7 @@ public abstract class BasicContainer implements Container{
     private LinkedHashMap<Class<?>, ObjectDefinition<?>> typedDefinitions;
     private LinkedHashMap<String, ObjectDefinition<?>> namedDefinitions;
     private Collection<ObjectDefinition<?>> objectDefinitions;
+    private Log log;
 
     protected BasicContainer() {
         typedDefinitions = new LinkedHashMap<>(20);
@@ -50,5 +51,11 @@ public abstract class BasicContainer implements Container{
         return objectDefinitions;
     }
 
-
+    @Override
+    public Log getLog() {
+        if (this.log == null) {
+            this.log = new SystemOutLog();
+        }
+        return log;
+    }
 }

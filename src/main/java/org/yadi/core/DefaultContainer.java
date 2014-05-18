@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 public class DefaultContainer extends BasicContainer {
 
     private Consumer<Container> builder;
+    private Log log;
 
     private DefaultContainer(Consumer<Container> builder) {
         super();

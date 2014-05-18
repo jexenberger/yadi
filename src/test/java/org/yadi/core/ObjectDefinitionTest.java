@@ -36,7 +36,7 @@ public class ObjectDefinitionTest {
 
         objectDefinition.type(MyObject.class)
                 .named("MyObjectBean")
-                .addConstructorArg("hello world")
+                .constructorVal("hello world")
                 .createWith(MyObject::CREATE)
                 .destroyWith(MyObject::DESTROY)
                 .initWith(MyObject::afterPropertiesSet)

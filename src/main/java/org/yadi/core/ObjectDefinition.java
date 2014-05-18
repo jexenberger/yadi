@@ -15,12 +15,18 @@ Copyright 2014 Julian Exenberger
 */
 package org.yadi.core;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import static org.yadi.core.Generics.extractTypeArgumentFromClass;
+import static org.yadi.core.Generics.extractTypeArgumentFromInterface;
+import static org.yadi.core.ReflectionUtils.getTypeArguments;
 
 /**
  * Created by julian3 on 2014/05/01.
@@ -35,13 +41,20 @@ public class ObjectDefinition<T> {
     private String name;
     private Class[] bindings;
     private String scopeIdentifier = SingletonScope.SINGLETON;
-    private Collection<Pair<Class, Object>> constructorArgs;
     private Construction<T> construction;
     private Arguments arguments;
+    private Container container;
+    private boolean proxy = false;
 
     public ObjectDefinition() {
-        this.construction = (arguments)-> {};
+        this.construction = (arguments) -> {
+        };
         this.arguments = new Arguments();
+    }
+
+    public ObjectDefinition(Container container) {
+        this();
+        this.container = container;
     }
 
     public ObjectDefinition<T> type(Class<T> myObjectClass) {
@@ -70,6 +83,14 @@ public class ObjectDefinition<T> {
         }
     }
 
+    public <K> ObjectDefinition<T> inject(BiConsumer<T, K> setMethod, String name) {
+        return inject(setMethod, ()-> getContainer().get(name));
+    }
+
+    public <K> ObjectDefinition<T> inject(BiConsumer<T, K> setMethod, Class type) {
+        return inject(setMethod, ()->  (K) getContainer().get(type));
+    }
+
     public ObjectDefinition<T> construct(Construction<T> constructor) {
         this.construction = constructor;
         return this;
@@ -80,24 +101,56 @@ public class ObjectDefinition<T> {
         if (this.factory != null) {
             return this.factory.get();
         }
-        return construction.createWithConstructor(this.arguments, this.implementation);
+        return (T) construction.createWithConstructor(this.arguments, this.implementation, (ref) -> {
+                    ObjectDefinition definition = (ref.isNamed()) ? container.getDefinition(ref.getName()) : container.getDefinition(ref.getType());
+                    return definition.getImplementation();
+                },
+                (ref) -> {
+                    return (ref.isNamed()) ? container.get(ref.getName()) : container.get(ref.getType());
+                }
+        );
     }
 
 
     public <K> ObjectDefinition<T> set(BiConsumer<T, K> setA, K s) {
+        Class<? extends Type> aClass = setA.getClass().getGenericInterfaces()[0].getClass();
         this.getMutators().add(new Pair<>(setA, s));
         return this;
 
     }
 
-    public <K> ObjectDefinition<T> addConstructorArg(Object s) {
-        return addConstructorArg(s, s.getClass());
+    public <K> ObjectDefinition<T> proxy() {
+        if (this.implementation == null) {
+            throw new IllegalStateException("no implementation defined on Object Defintion");
+        }
+        if (this.implementation.getInterfaces().length == 0) {
+            throw new IllegalStateException(this.implementation.getName()+" was set to be proxied but has no interfaces to proxy");
+        }
+        this.proxy = true;
+        return this;
     }
 
-    public <K> ObjectDefinition<T> addConstructorArg(Object s, Class<?> targetType) {
+
+    public <K> ObjectDefinition<T> constructorVal(Object... args) {
+        for (Object arg : args) {
+            return constructorVal(arg, arg.getClass());
+        }
+        return this;
+    }
+
+    public <K> ObjectDefinition<T> constructorVal(Object s, Class<?> targetType) {
         this.arguments.add(s, targetType);
         return this;
 
+    }
+
+
+    public <K> ObjectDefinition<T> constructorRef(String name) {
+        return constructorVal(new Reference<T>(name, container.asNamedSource()), null);
+    }
+
+    public <K> ObjectDefinition<T> constructorRef(Class<K> type) {
+        return constructorVal(new Reference<K>(type, container.asTypeSource()), null);
     }
 
 
@@ -154,9 +207,16 @@ public class ObjectDefinition<T> {
     public ObjectDefinition<T> boundTo(Class<?>... types) {
         for (Class<?> type : types) {
             assert type.isInterface();
+            validateType(type);
         }
         this.bindings = types;
         return this;
+    }
+
+    private void validateType(Class<?> type) {
+        if (implementation != null && !type.isAssignableFrom(implementation)) {
+            throw new IllegalStateException("tried to bind '"+type+"' to '"+implementation+"' but the types are not compatible");
+        }
     }
 
     public String getName() {
@@ -186,7 +246,39 @@ public class ObjectDefinition<T> {
         getMutators().add(new Pair<>(consumer, value));
     }
 
+    public Container getContainer() {
+        return container;
+    }
+
+    public boolean isProxy() {
+        return proxy;
+    }
+
     Construction<T> getConstruction() {
         return construction;
+    }
+
+    public <K> ObjectDefinition<T> inject(BiConsumer<T, K> setMethod, Supplier<K> supplier) {
+        BiConsumer<T, K> consumer = (instance, value) -> {
+            K result = supplier.get();
+            if (result == null) {
+                throw new ContainerException(instance.getClass().getName()+" tried to wire named instance which does not exist");
+            }
+            setMethod.accept(instance, result);
+        };
+        addMutator(consumer, null);
+        return this;
+    }
+
+    public  <K> ObjectDefinition<T> validate() {
+        if (this.implementation == null) {
+            throw new IllegalStateException("no implementation defined");
+        }
+        if (this.bindings != null) {
+            for (Class binding : bindings) {
+                validateType(binding);
+            }
+        }
+        return this;
     }
 }

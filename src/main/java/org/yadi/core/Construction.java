@@ -14,10 +14,10 @@ Copyright 2014 Julian Exenberger
         See the License for the specific language governing permissions and
         limitations under the License.
 */
+
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.yadi.core.ReflectionUtils.resolveConstructor;
@@ -28,18 +28,33 @@ import static org.yadi.core.ReflectionUtils.resolveConstructor;
 public interface Construction<T> extends Consumer<Arguments> {
 
 
-
-
-
-    default T createWithConstructor(Arguments arguments, Class<T> implementation) {
+    default T createWithConstructor(Arguments arguments, Class<T> implementation, Function<Reference, Object> typeResolver, Function<Reference, Object> objectResolver) {
         accept(arguments);
         try {
             if (arguments.size() == 0) {
                 return implementation.newInstance();
             }
 
-            Class[] types = arguments.stream().map(Pair::getCar).collect(Collectors.toList()).toArray(new Class[]{});
-            Object[] args = arguments.stream().map(Pair::getCdr).toArray();
+            Object[] args = arguments.stream().map((pair) -> {
+                if (pair.getCdr() instanceof Reference && objectResolver != null) {
+                    Reference ref = (Reference) pair.getCdr();
+                    return objectResolver.apply(ref);
+                } else {
+                    return pair.getCdr();
+                }
+
+            }).toArray();
+            Class[] types = arguments.stream()
+                    .map((pair) -> {
+                        if (pair.getCdr() instanceof Reference && typeResolver != null && pair.getCar() == null) {
+                            Reference ref = (Reference) pair.getCdr();
+                            return typeResolver.apply(ref);
+                        } else {
+                            return pair.getCar();
+                        }
+                    })
+                    .collect(Collectors.toList())
+                    .toArray(new Class[]{});
 
             Constructor<T> theConstructor = resolveConstructor(implementation, types);
             return theConstructor.newInstance(args);
