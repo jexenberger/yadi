@@ -15,7 +15,6 @@ Copyright 2014 Julian Exenberger
 */
 package org.yadi.core;
 
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,7 +25,6 @@ import java.util.function.Supplier;
 
 import static org.yadi.core.Generics.extractTypeArgumentFromClass;
 import static org.yadi.core.Generics.extractTypeArgumentFromInterface;
-import static org.yadi.core.ReflectionUtils.getTypeArguments;
 
 /**
  * Created by julian3 on 2014/05/01.
@@ -83,11 +81,8 @@ public class ObjectDefinition<T> {
         }
     }
 
-    public <K> ObjectDefinition<T> inject(BiConsumer<T, K> setMethod, String name) {
-        return inject(setMethod, ()-> getContainer().get(name));
-    }
 
-    public <K> ObjectDefinition<T> inject(BiConsumer<T, K> setMethod, Class type) {
+    public <K> ObjectDefinition<T> inject(BiConsumer<T, K> setMethod, Class<K> type) {
         return inject(setMethod, ()->  (K) getContainer().get(type));
     }
 
@@ -102,11 +97,11 @@ public class ObjectDefinition<T> {
             return this.factory.get();
         }
         return (T) construction.createWithConstructor(this.arguments, this.implementation, (ref) -> {
-                    ObjectDefinition definition = (ref.isNamed()) ? container.getDefinition(ref.getName()) : container.getDefinition(ref.getType());
+                    ObjectDefinition definition =  container.getDefinition(ref.getType());
                     return definition.getImplementation();
                 },
                 (ref) -> {
-                    return (ref.isNamed()) ? container.get(ref.getName()) : container.get(ref.getType());
+                    return  container.get(ref.getType());
                 }
         );
     }
@@ -131,26 +126,22 @@ public class ObjectDefinition<T> {
     }
 
 
-    public <K> ObjectDefinition<T> constructorVal(Object... args) {
+    public <K> ObjectDefinition<T> args(Object... args) {
         for (Object arg : args) {
-            return constructorVal(arg, arg.getClass());
+            return arg(arg, arg.getClass());
         }
         return this;
     }
 
-    public <K> ObjectDefinition<T> constructorVal(Object s, Class<?> targetType) {
+    public <K> ObjectDefinition<T> arg(Object s, Class<?> targetType) {
         this.arguments.add(s, targetType);
         return this;
 
     }
 
 
-    public <K> ObjectDefinition<T> constructorRef(String name) {
-        return constructorVal(new Reference<T>(name, container.asNamedSource()), null);
-    }
-
     public <K> ObjectDefinition<T> constructorRef(Class<K> type) {
-        return constructorVal(new Reference<K>(type, container.asTypeSource()), null);
+        return arg(new Reference<K>(type, container.asTypeSource()), null);
     }
 
 
@@ -206,7 +197,6 @@ public class ObjectDefinition<T> {
 
     public ObjectDefinition<T> boundTo(Class<?>... types) {
         for (Class<?> type : types) {
-            assert type.isInterface();
             validateType(type);
         }
         this.bindings = types;

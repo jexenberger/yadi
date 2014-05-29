@@ -100,14 +100,14 @@ public class InjectableObjectDefinition<T>  extends ObjectDefinition<T>{
 
 
     @Override
-    public <K> InjectableObjectDefinition<T> constructorVal(Object ... s) {
-        super.constructorVal(s);
+    public <K> InjectableObjectDefinition<T> args(Object... s) {
+        super.args(s);
         return this;
     }
 
     @Override
-    public <K> InjectableObjectDefinition<T> constructorVal(Object s, Class<?> targetType) {
-        super.constructorVal(s, targetType);
+    public <K> InjectableObjectDefinition<T> arg(Object s, Class<?> targetType) {
+        super.arg(s, targetType);
         return this;
     }
 

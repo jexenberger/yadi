@@ -61,13 +61,6 @@ public class ContainerTest extends BasicContainer {
     }
 
 
-    @Test
-    public void testGetByName() throws Exception {
-
-        Optional<MyObject> objectOptional = safelyGet(OBJECT_NAME);
-        assertTrue(objectOptional.isPresent());
-        assertEquals("hello world", objectOptional.get().getC());
-    }
 
     @Test
     public void testGetByType() throws Exception {

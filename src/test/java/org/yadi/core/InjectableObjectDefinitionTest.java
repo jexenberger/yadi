@@ -44,7 +44,7 @@ public class InjectableObjectDefinitionTest extends BasicContainer{
     @Test
     public void testInjectByTypeAndName() throws Exception {
 
-        Optional<AnObject> myObject = safelyGet(AnObject.class.getName());
+        Optional<AnObject> myObject = safelyGet(AnObject.class);
         assertTrue(myObject.isPresent());
         assertNotNull(myObject.get().getWired());
         assertNotNull(myObject.get().getOther());
@@ -54,13 +54,14 @@ public class InjectableObjectDefinitionTest extends BasicContainer{
     public void build() {
         define(MyObject.class)
                 .asInstance()
-                .set(MyObject::setC, "hello world")
                 .boundTo(Runnable.class)
+                .set(MyObject::setC, "hello world")
                 .destroyWith(MyObject::DESTROY);
 
         define(AnObject.class)
+                .boundTo(AnObject.class)
                 .inject(AnObject::setWired, Runnable.class)
-                .inject(AnObject::setOther, MyObject.class.getName());
+                .inject(AnObject::setOther, Runnable.class);
 
     }
 }

@@ -30,18 +30,6 @@ public interface Container {
         build();
         if (getDefinitions().size() > 0) {
             getDefinitions().forEach((objectDefinition) -> {
-                String name = objectDefinition.getName();
-                if (getNamedDefinitions().containsKey(name)) {
-                    ObjectDefinition<?> existing = getNamedDefinitions().get(name);
-                    throw new IllegalStateException("tried to bind "+objectDefinition.getImplementation().getName()+" with name '"+objectDefinition.getImplementation().getName()+"' but "+existing.getImplementation().getName()+" already uses this name");
-                }
-                getNamedDefinitions().put(name, objectDefinition);
-                String scopeIdentifier = objectDefinition.getScopeIdentifier();
-                Optional<Scope> scopeOptional = Scopes.get(scopeIdentifier);
-                scopeOptional.ifPresent((scope) -> scope.addObjectDefinition(objectDefinition));
-            });
-            getDefinitions().forEach((objectDefinition) -> {
-                String name = objectDefinition.getName();
                 Optional<Class[]> bindings = objectDefinition.getBindings();
                 bindings.ifPresent((classes) -> {
                     for (Class aClass : classes) {
@@ -49,9 +37,13 @@ public interface Container {
                             ObjectDefinition<?> existing = getTypedDefinitions().get(aClass);
                             throw new IllegalStateException("tried to bind "+objectDefinition.getImplementation().getName()+" to "+aClass.getName()+" but "+existing.getImplementation().getName()+" is already bound to this");
                         }
-                        getTypedDefinitions().put(aClass, getNamedDefinitions().get(name));
+                        getTypedDefinitions().put(aClass, objectDefinition);
                     }
                 });
+                if (!bindings.isPresent()) {
+                    getTypedDefinitions().put(objectDefinition.getImplementation(), objectDefinition);
+                }
+
             });
 
         }
@@ -60,7 +52,6 @@ public interface Container {
 
     Map<Class<?>, ObjectDefinition<?>> getTypedDefinitions();
 
-    Map<String, ObjectDefinition<?>> getNamedDefinitions();
 
     default void close() {
         Scopes.shutdown();
@@ -96,19 +87,8 @@ public interface Container {
         return instanceFromScope.get();
     }
 
-    default <T> Optional<T> safelyGet(String name) {
-        final ObjectDefinition<T> objectDefinition = getDefinition(name);
-        return getFromScope(objectDefinition);
-    }
 
-    default <T> T get(String name) {
-        final ObjectDefinition<T> objectDefinition = getDefinition(name);
-        return getFromScope(objectDefinition).get();
-    }
 
-    default <T> ObjectDefinition<T> getDefinition(String name) {
-        return (ObjectDefinition<T>) getNamedDefinitions().get(name);
-    }
 
 
     default <T> Optional<T> getFromScope(ObjectDefinition<T> objectDefinition) {
@@ -128,9 +108,6 @@ public interface Container {
         return (type)-> {return this.get(type);};
     }
 
-    default <K> Function<String, K> asNamedSource() {
-        return (name)-> {return this.get(name);};
-    }
 
     Log getLog();
 

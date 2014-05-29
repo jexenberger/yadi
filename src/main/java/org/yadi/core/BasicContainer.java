@@ -26,13 +26,11 @@ import java.util.Map;
 public abstract class BasicContainer implements Container{
 
     private LinkedHashMap<Class<?>, ObjectDefinition<?>> typedDefinitions;
-    private LinkedHashMap<String, ObjectDefinition<?>> namedDefinitions;
     private Collection<ObjectDefinition<?>> objectDefinitions;
     private Log log;
 
     protected BasicContainer() {
         typedDefinitions = new LinkedHashMap<>(20);
-        namedDefinitions = new LinkedHashMap<>(20);
         objectDefinitions = new ArrayList<>();
     }
 
@@ -41,10 +39,6 @@ public abstract class BasicContainer implements Container{
         return typedDefinitions;
     }
 
-    @Override
-    public Map<String, ObjectDefinition<?>> getNamedDefinitions() {
-        return namedDefinitions;
-    }
 
     @Override
     public Collection<ObjectDefinition<?>> getDefinitions() {

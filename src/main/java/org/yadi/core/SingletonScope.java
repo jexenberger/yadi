@@ -33,7 +33,6 @@ public class SingletonScope implements Scope {
     @Override
     public <T> Optional<T> create(ObjectDefinition<T> objectDefinition) {
         String name = objectDefinition.getName();
-        System.out.println("Creating -> "+name);
         if (!instances.containsKey(name)) {
             T instance = objectDefinition.create();
             instances.put(name, new Pair<>(objectDefinition, instance));
