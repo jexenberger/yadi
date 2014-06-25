@@ -92,6 +92,10 @@ public class MyObject implements Runnable, Supplier<Integer> {
         System.out.println("hello world");
     }
 
+    public void start() {
+        System.out.println("started");
+    }
+
     @Override
     public Integer get() {
         run();

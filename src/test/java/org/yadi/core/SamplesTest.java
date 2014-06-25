@@ -14,12 +14,15 @@ public class SamplesTest {
     public void testSimpleString() throws Exception {
 
         Container container = create((builder) -> {
-            builder
-                    .define(String.class)
+            builder.define(String.class)
                     .args("hello world");
+
+            builder.define(MyObject.class)
+                    .set(MyObject::setA,"hello world")
+                    .initWith(MyObject::start);
         });
-        String myString = container.get(String.class);
-        System.out.println("An non-empty string: " + myString);
+        MyObject myString = container.get(MyObject.class);
+        System.out.println("An non-empty string: " + myString.get());
 
     }
 

@@ -17,9 +17,7 @@ Copyright 2014 Julian Exenberger
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by julian3 on 2014/05/01.
@@ -28,6 +26,21 @@ public class ObjectDefinitionTest {
 
 
     public static final String HELLLOOOO = "helllloooo";
+
+
+    @Test
+    public void testSimple() throws Exception {
+        MyObject result = new ObjectDefinition<MyObject>()
+                .type(MyObject.class)
+                .set((myObject, value)-> myObject.setA(value), "hello world")
+                .create();
+
+        result = new ObjectDefinition<MyObject>()
+                .type(MyObject.class)
+                .set(MyObject::setA, "hello world")
+                .create();
+
+    }
 
     @Test
     public void testDefine() throws Exception {
@@ -41,7 +54,7 @@ public class ObjectDefinitionTest {
                 .destroyWith(MyObject::DESTROY)
                 .initWith(MyObject::afterPropertiesSet)
                 .set(MyObject::setA, "hello world")
-                .bind(MyObject::setC, ()-> HELLLOOOO)
+                .bind(MyObject::setC, () -> HELLLOOOO)
                 .bind(MyObject::setB, MyObject::aValue);
 
         MyObject result = objectDefinition.create();
@@ -50,8 +63,6 @@ public class ObjectDefinitionTest {
         assertEquals(MyObject.aValue(), result.getB());
         assertEquals(HELLLOOOO, result.getC());
         assertTrue(result.isAfterProps());
-
-
 
 
     }
