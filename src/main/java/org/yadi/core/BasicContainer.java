@@ -15,10 +15,7 @@ Copyright 2014 Julian Exenberger
 */
 package org.yadi.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by julian3 on 2014/05/03.
@@ -26,12 +23,20 @@ import java.util.Map;
 public abstract class BasicContainer implements Container{
 
     private LinkedHashMap<Class<?>, ObjectDefinition<?>> typedDefinitions;
+    private LinkedHashMap<String, ObjectDefinition<?>> namedDefinitions;
     private Collection<ObjectDefinition<?>> objectDefinitions;
     private Log log;
+    private Container parent;
 
     protected BasicContainer() {
         typedDefinitions = new LinkedHashMap<>(20);
         objectDefinitions = new ArrayList<>();
+        namedDefinitions = new LinkedHashMap<>(20);
+    }
+
+    protected BasicContainer(Container parent) {
+        this();
+        this.parent = parent;
     }
 
     @Override
@@ -39,6 +44,10 @@ public abstract class BasicContainer implements Container{
         return typedDefinitions;
     }
 
+    @Override
+    public Map<String, ObjectDefinition<?>> getNamedDefinitions() {
+        return namedDefinitions;
+    }
 
     @Override
     public Collection<ObjectDefinition<?>> getDefinitions() {
@@ -48,8 +57,21 @@ public abstract class BasicContainer implements Container{
     @Override
     public Log getLog() {
         if (this.log == null) {
-            this.log = new SystemOutLog();
+            if (getParent().isPresent()) {
+                return getParent().get().getLog();
+            } else {
+                return new SystemOutLog();
+            }
         }
         return log;
+    }
+
+    @Override
+    public Optional<Container> getParent() {
+        return Optional.ofNullable(this.parent);
+    }
+
+    public void setParent(Container parent) {
+        this.parent = parent;
     }
 }

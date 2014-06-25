@@ -43,6 +43,8 @@ public class ObjectDefinition<T> {
     private Arguments arguments;
     private Container container;
     private boolean proxy = false;
+    private boolean explicitlyNamed = false;
+    private boolean explicitlyBound = false;
 
     public ObjectDefinition() {
         this.construction = (arguments) -> {
@@ -192,15 +194,26 @@ public class ObjectDefinition<T> {
 
     public ObjectDefinition<T> named(String name) {
         this.name = name;
+        this.explicitlyNamed = true;
         return this;
     }
+
+    public boolean isExplicitlyNamed() {
+        return explicitlyNamed;
+    }
+
 
     public ObjectDefinition<T> boundTo(Class<?>... types) {
         for (Class<?> type : types) {
             validateType(type);
         }
         this.bindings = types;
+        this.explicitlyBound = true;
         return this;
+    }
+
+    public boolean isExplicitlyBound() {
+        return explicitlyBound;
     }
 
     private void validateType(Class<?> type) {

@@ -39,14 +39,6 @@ public class InstanceScope implements Scope{
 
     }
 
-    @Override
-    public <T> Optional<T> create(ObjectDefinition<T> objectDefinition, Scope parentScope) {
-        if ((parentScope == null || parentScope == this) && !objectDefinition.hasDestructor()) {
-            return Optional.of(objectDefinition.create());
-        } else {
-            return create(objectDefinition);
-        }
-    }
 
     @Override
     public void terminate() {

@@ -29,7 +29,6 @@ public interface Scope {
     Collection<ObjectDefinition<?>> objectDefinitions = new ArrayList<>();
 
     <T> java.util.Optional<T> create(ObjectDefinition<T> objectDefinition);
-    <T> java.util.Optional<T> create(ObjectDefinition<T> objectDefinition, Scope parentScope);
 
     void terminate();
     void initialise();

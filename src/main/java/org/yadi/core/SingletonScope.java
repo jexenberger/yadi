@@ -42,12 +42,6 @@ public class SingletonScope implements Scope {
     }
 
     @Override
-    public <T> Optional<T> create(ObjectDefinition<T> objectDefinition, Scope parentScope) {
-        //don't care, a singleton is a singleton
-        return create(objectDefinition);
-    }
-
-    @Override
     public void terminate() {
 
         instances.forEach((key, value) -> {

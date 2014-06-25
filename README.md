@@ -106,7 +106,7 @@ An empty String useless so Lets improve things a little by adding a value to the
 import static org.yadi.core.DefaultContainer.create;
 ...
 Container container = create((builder) -> {
-   builder.define(String.class).addConstructorArg("hello world");
+   builder.define(String.class).args("hello world");
 });
 String myString = container.get("java.lang.String");
 System.out.println("An non-empty string: "+myString);
@@ -114,20 +114,20 @@ System.out.println("An non-empty string: "+myString);
 Here are add a constructor value of `hello world` called the `addConstructorArg()` method to set the value of the string to `hello world`.
 
 ### Naming your objects
-Now having a String named `java.lang.String` to uniquely address an object is probably not a great idea so lets name the object using `named(String)` method:
+Sometimes you want to be able to bind objects by name rather than by it's type so lets name the object using `named(String)` method:
  ```java
 import static org.yadi.core.DefaultContainer.create;
 ...
 Container container = create((builder) -> {
-   builder
-     .define(String.class)    
-     .addConstructorArg("hello world")
-     .named("myString");
+     builder
+         .define(String.class)
+         .named("myString")
+         .args("hello world");
 });
 String myString = container.get("myString");
-System.out.println("An non-empty string: "+myString);
+System.out.println("An non-empty named string: "+myString);
 ```
-Here we named the object `myString`.
+Here the object is bound to name: `myString`.
 
 ### Setting Object values
 So Strings are not very useful in a DI context, so lets create a bit more of a meaty object: `Person`. this class looks as follows:
@@ -180,19 +180,32 @@ public class Person {
 }
 
 ```
-Lets create an instance of this Object called `jSmith` with name and surname `John Smith` respectively. To do this in Yadi we call the `set()` method(s) on the ObjectDefinition:
+Yadi uses the `java.util.function.BiConsumer` interface, this allows you to set the value of an object on demand by the container via a Lambda.
 
+The following example allows sets the name "John" on an instance of Person, via the `set` method which takes the BiConsumer.
+
+```java
+
+Container container = create((builder) -> {
+    builder
+        .define(Person.class)
+        .set((person,value) -> person.setName(value), "John");
+    });
+Person person = container.get(Person.class);
+System.out.println(person.getName());
+```
+
+However we can make this more succinct. Java 8.0 allows method references to refer to an arbitrary instance of an object, where the first parameter of the lambda method must be the instance against which the method is executed, This means that the BiConsumer maps the pattern of a typical setter.
 ```java
 import static org.yadi.core.DefaultContainer.create;
 ...
 Container container = create((builder) -> {
-   builder
-     .define(Person.class)    
-     .named("jSmith");
-     .set(Person::setName, "John")
-     .set(Person::setSurname, "Smith")
-});
-Person person = container.get("jSmith");
+    builder
+        .define(Person.class)
+        .set(Person::setName, "John");
+    });
+Person person = container.get(Person.class);
+System.out.println(person.getName());Person person = container.get("jSmith");
 System.out.println(person.getName()+" "+person.getSurname());
 ```
 ### Using lifecycle methods
@@ -236,6 +249,33 @@ Container container = create((builder) -> {
 
    builder
      .define(Person.class)    
+     .named("jSmith");
+     .set(Person::setName, "John")
+     .set(Person::setSurname, "Smith")
+     .inject(Person::setSpouse, "sSmith")
+     .initWith(Person::setup);
+
+
+});
+Person person = container.get("jSmith");
+System.out.println(person.getSpouse().getFullName());
+```
+
+Alternatively if you have a single value
+
+ ```java
+import static org.yadi.core.DefaultContainer.create;
+...
+Container container = create((builder) -> {
+   builder
+     .define(Person.class)
+     .named("sSmith");
+     .set(Person::setName, "Sarah")
+     .set(Person::setSurname, "Smith")
+     .initWith(Person::setup);
+
+   builder
+     .define(Person.class)
      .named("jSmith");
      .set(Person::setName, "John")
      .set(Person::setSurname, "Smith")

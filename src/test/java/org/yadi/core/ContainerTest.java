@@ -19,11 +19,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static java.util.Objects.isNull;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.*;
 
 /**
  * Created by julian3 on 2014/05/03.
@@ -47,10 +49,11 @@ public class ContainerTest extends BasicContainer {
     public void testInit() throws Exception {
         assertNotNull(getDefinitions());
         assertEquals(1, getDefinitions().size());
-        assertEquals(OBJECT_NAME, getDefinitions().iterator().next().getName());
+        assertThat(getDefinitions().iterator().next().getName(),equalTo(OBJECT_NAME));
 
 
     }
+
 
     @Override
     public void build() {

@@ -17,7 +17,6 @@ package org.yadi.core;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Created by julian3 on 2014/05/01.
@@ -30,19 +29,25 @@ public interface Container {
         build();
         if (getDefinitions().size() > 0) {
             getDefinitions().forEach((objectDefinition) -> {
-                Optional<Class[]> bindings = objectDefinition.getBindings();
-                bindings.ifPresent((classes) -> {
-                    for (Class aClass : classes) {
-                        if (getTypedDefinitions().containsKey(aClass)) {
-                            ObjectDefinition<?> existing = getTypedDefinitions().get(aClass);
-                            throw new IllegalStateException("tried to bind "+objectDefinition.getImplementation().getName()+" to "+aClass.getName()+" but "+existing.getImplementation().getName()+" is already bound to this");
-                        }
-                        getTypedDefinitions().put(aClass, objectDefinition);
-                    }
-                });
-                if (!bindings.isPresent()) {
-                    getTypedDefinitions().put(objectDefinition.getImplementation(), objectDefinition);
+                if (objectDefinition.isExplicitlyNamed()) {
+                    getNamedDefinitions().put(objectDefinition.getName(), objectDefinition);
                 }
+                if (objectDefinition.isExplicitlyBound()) {
+                    Optional<Class[]> bindings = objectDefinition.getBindings();
+                    bindings.ifPresent((classes) -> {
+                        for (Class aClass : classes) {
+                            if (getTypedDefinitions().containsKey(aClass)) {
+                                ObjectDefinition<?> existing = getTypedDefinitions().get(aClass);
+                                throw new IllegalStateException("tried to bind " + objectDefinition.getImplementation().getName() + " to " + aClass.getName() + " but " + existing.getImplementation().getName() + " is already bound to this");
+                            }
+                            getTypedDefinitions().put(aClass, objectDefinition);
+                        }
+                    });
+                }
+                if (!objectDefinition.isExplicitlyBound() && !objectDefinition.isExplicitlyNamed()) {
+                   getTypedDefinitions().put(objectDefinition.getImplementation(), objectDefinition);
+                }
+
 
             });
 
@@ -52,6 +57,9 @@ public interface Container {
 
     Map<Class<?>, ObjectDefinition<?>> getTypedDefinitions();
 
+    Map<String, ObjectDefinition<?>> getNamedDefinitions();
+
+    Optional<Container> getParent();
 
     default void close() {
         Scopes.shutdown();
@@ -78,26 +86,36 @@ public interface Container {
         return (ObjectDefinition<T>) getTypedDefinitions().get(type);
     }
 
+    default <T> ObjectDefinition<T> getDefinition(String type) {
+        return (ObjectDefinition<T>) getNamedDefinitions().get(type);
+    }
+
     default <T> T get(Class<T> type) {
         final ObjectDefinition<T> objectDefinition = (ObjectDefinition<T>) getTypedDefinitions().get(type);
         if (objectDefinition == null) {
-            throw new IllegalArgumentException(type.getName()+" is not bound to any object");
+            return getParent().orElseThrow(()-> new IllegalArgumentException(type.getName() + " is not bound to any object")).get(type);
+        }
+        Optional<T> instanceFromScope = getFromScope(objectDefinition);
+        return instanceFromScope.get();
+    }
+
+    default <T> T get(String name) {
+        final ObjectDefinition<T> objectDefinition = (ObjectDefinition<T>) getNamedDefinitions().get(name);
+        if (objectDefinition == null) {
+            return getParent().orElseThrow(()-> new IllegalArgumentException(name + " is not bound to any object")).get(name);
         }
         Optional<T> instanceFromScope = getFromScope(objectDefinition);
         return instanceFromScope.get();
     }
 
 
-
-
-
     default <T> Optional<T> getFromScope(ObjectDefinition<T> objectDefinition) {
         if (objectDefinition != null) {
             Optional<Scope> scope = Scopes.get(objectDefinition.getScopeIdentifier());
             if (scope.isPresent()) {
-                return scope.get().create(objectDefinition, null);
+                return scope.get().create(objectDefinition);
             } else {
-                throw new ContainerException(objectDefinition.getScopeIdentifier()+" is not a recognised scope");
+                throw new ContainerException(objectDefinition.getScopeIdentifier() + " is not a recognised scope");
             }
         }
         return Optional.empty();
@@ -105,11 +123,15 @@ public interface Container {
     }
 
     default <K> Function<Class<K>, K> asTypeSource() {
-        return (type)-> {return this.get(type);};
+        return (type) -> {
+            return this.get(type);
+        };
     }
 
 
     Log getLog();
+
+    void setParent(Container container);
 
 
     void build();
