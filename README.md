@@ -84,20 +84,23 @@ import static org.yadi.core.DefaultContainer.create;
 Container container = create((builder) -> {
    builder.define(String.class);
 });
+String myString = container.get(String.class);
+System.out.println("An empty string: "+myString);
 ```
 
-This example simple calls the `define(Class)` method to create an instance of a String.
+This example simple calls the `define(Class)` method to create an instance of a String
 
-Yadi allows you to look up all instances in the container via String, or if defined an specific Type. By default if no name is specified for the object, the fully qualified class name is used. Therefore to look up 
-The `String` we just defined we do the following:
+### Naming your objects
+Yadi also allows you to create an instance of an object and reference it by a name, this allows multiple object of the same type to be created in the container. we do this by calling the `named(String)` method:
 
  ```java
 import static org.yadi.core.DefaultContainer.create;
 ...
 Container container = create((builder) -> {
-   builder.define(String.class);
+   builder.define(String.class).
+           named("myString");
 });
-String myString = container.get("java.lang.String");
+String myString = container.get("myString");
 System.out.println("An empty string: "+myString);
 ```
 ### Using constructors
@@ -109,25 +112,10 @@ Container container = create((builder) -> {
    builder.define(String.class).args("hello world");
 });
 String myString = container.get("java.lang.String");
-System.out.println("An non-empty string: "+myString);
+System.out.println("A non-empty string: "+myString);
 ```
-Here are add a constructor value of `hello world` called the `addConstructorArg()` method to set the value of the string to `hello world`.
+Here are add a constructor value of `hello world` called the `args()` method to set the value of the string to `hello world`.
 
-### Naming your objects
-Sometimes you want to be able to bind objects by name rather than by it's type so lets name the object using `named(String)` method:
- ```java
-import static org.yadi.core.DefaultContainer.create;
-...
-Container container = create((builder) -> {
-     builder
-         .define(String.class)
-         .named("myString")
-         .args("hello world");
-});
-String myString = container.get("myString");
-System.out.println("An non-empty named string: "+myString);
-```
-Here the object is bound to name: `myString`.
 
 ### Setting Object values
 So Strings are not very useful in a DI context, so lets create a bit more of a meaty object: `Person`. this class looks as follows:
@@ -179,13 +167,16 @@ public class Person {
     }
 }
 
+#### Setting Values using Lambdas
+
 ```
 Yadi uses the `java.util.function.BiConsumer` interface, this allows you to set the value of an object on demand by the container via a Lambda.
 
 The following example allows sets the name "John" on an instance of Person, via the `set` method which takes the BiConsumer.
 
 ```java
-
+import static org.yadi.core.DefaultContainer.create;
+...
 Container container = create((builder) -> {
     builder
         .define(Person.class)
@@ -194,8 +185,10 @@ Container container = create((builder) -> {
 Person person = container.get(Person.class);
 System.out.println(person.getName());
 ```
+#### Setting Values using Method references
 
-However we can make this more succinct. Java 8.0 allows method references to refer to an arbitrary instance of an object, where the first parameter of the lambda method must be the instance against which the method is executed, This means that the BiConsumer maps the pattern of a typical setter.
+We can make the previous example more succinct. Java 8.0 allows method references to refer to an arbitrary instance of an object, where the first parameter of the lambda method must be the instance against which the method is executed, This means that the BiConsumer maps the pattern of a typical setter.
+
 ```java
 import static org.yadi.core.DefaultContainer.create;
 ...
@@ -261,7 +254,7 @@ Person person = container.get("jSmith");
 System.out.println(person.getSpouse().getFullName());
 ```
 
-Alternatively if you have a single value
+Alternatively if you have a single value...
 
  ```java
 import static org.yadi.core.DefaultContainer.create;
